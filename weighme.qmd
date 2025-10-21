@@ -1,0 +1,221 @@
+---
+title: "How I Overfit My Waistline in Python"
+author: "Wade K. Copeland"
+date: last-modified
+date-format: "MMMM DD, YYYY"
+output-file: index.html
+bibliography: references.bib
+format:
+    html:
+        embed-resources: true
+        code-overflow: wrap
+        page-layout: full
+        code-fold: false
+        toc: true
+        toc-location: left
+        toc-depth: 4
+        toc-expand: 4
+        html-math-method: mathjax
+        code-tools:
+            source: true
+            toggle: true
+            caption: "Source Code"
+number-sections: false
+appendix-style: plain
+engine: jupyter
+knitr:
+    opts_knit:
+        root.dir: "./"
+---
+
+```{r}
+#| echo: false
+
+library("reticulate")
+use_virtualenv("./.venv")
+```
+
+# Introduction
+
+My wife and I are pursuing a mutual reduction in gravitational pull, and as a certified try-hard sweat lord, I naturally wrote a Python program to monitor our descent into svelteness.
+Daily fluctuations are misleading (empirical evidence: a single urination event produced a -2 lb delta), so I employed statistical learning to reveal the true signal beneath the noise. Future weight loss now arrives with 95% confidence and 0% chill (@sec-appendix).
+
+```{python imports}
+#| echo: false
+
+###########
+# Imports #
+###########
+import pandas as pd
+import numpy as np
+import seaborn as sns
+from numbers_parser import Document
+import matplotlib.pyplot as plt
+import statsmodels.formula.api as smf
+import math
+```
+
+```{python data_setup}
+#| echo: false
+
+##############
+# Data setup #
+##############
+def setup_data():
+    doc = Document("Waimee’s Weight.numbers")
+    sheets = doc.sheets
+    tables = sheets[0].tables
+    data = tables[0].rows(values_only=True)
+    data = pd.DataFrame(data[1:], columns=data[0])
+    data = pd.melt(data, id_vars='Day', var_name='Person', value_name='Weight')
+    data['Day'] = data['Day'].astype('int')
+    data['Person'] = data['Person'].astype('category')
+    data['Weight'] = data['Weight'].astype('float')
+    return data
+
+d = setup_data()
+```
+
+# Results
+
+```{python model_fit}
+#| echo: false
+
+##################################
+# Linear Model to Predict Weight #
+##################################
+model = smf.ols('Weight ~ Day + Person + Day:Person', data = d)
+
+# Coefficients
+intercept = model.fit().params.iloc[0]
+person = model.fit().params.iloc[1]
+day = model.fit().params.iloc[2]
+day_person = model.fit().params.iloc[3]
+```
+
+```{python weight_loss_plot}
+#| echo: false
+#| label: weight-fig
+#| fig-cap: "Lineplot of daily weight with predicted values."
+
+####################
+# Weight Loss Plot #
+####################
+days = np.linspace(d['Day'].min(), d['Day'].max(), 100)
+
+predicted_data = pd.DataFrame({
+    'Day': np.tile(days, 2),
+    'Person': ['Person L']*len(days) + ['Person R']*len(days)
+})
+
+predicted = model.fit().predict(predicted_data)
+predicted_data['Weight'] = predicted
+
+def weight_plot(data, pdata):
+    plt.figure(figsize = (10, 6))
+    
+    for person in pdata['Person'].unique():
+        person_pred = pdata[pdata['Person'] == person]
+        sns.lineplot(x = 'Day', y = 'Weight', color = 'black', data = person_pred, linewidth = 2, alpha = 0.4)
+    
+    sns.lineplot(x = 'Day', y = 'Weight', hue = 'Person', data = data)
+    
+    plt.title('Line Plot with Groups')
+    plt.xlabel('Day')
+    plt.ylabel('Weight')
+    
+    plt.legend(title='Person')
+    plt.grid(True)
+    
+    plt.savefig('weight_fig.png')
+
+weight_plot(d, predicted_data)
+```
+
+```{python summary_table}
+#| echo: false
+
+#########################
+# Expectation Functions #
+#########################
+def predicted_weight(model, person, day):
+    model_fit = model.fit()
+    weight = model_fit.params.iloc[0] + model_fit.params.iloc[1]*person + model_fit.params.iloc[2]*day + model_fit.params.iloc[3]*person*day
+    return weight
+
+def predicted_day(model, person, weight):
+    model_fit = model.fit()
+    day = (weight - model_fit.params.iloc[0] - model_fit.params.iloc[1]*person)/(model_fit.params.iloc[2] + model_fit.params.iloc[3]*person)
+    return day
+
+def delta_weight_day(model, person):
+    model_fit = model.fit()
+    dweight = model_fit.params.iloc[2] + model_fit.params.iloc[3]*person
+    return dweight
+
+cruise_days = (pd.to_datetime('6-21-2026') - pd.Timestamp.now().normalize()).days
+
+summary = {
+    'Expected Weight<br>Loss Per Day (lbs/day)': {
+        'Person R': round(delta_weight_day(model, 1), 2),
+        'Person L': round(delta_weight_day(model, 0), 2)
+    },
+    
+    'Weight at Time of Cruise (lbs)': {
+        'Person R': round(predicted_weight(model, 1, cruise_days), 2),
+        'Person L': round(predicted_weight(model, 0, cruise_days), 2)
+    },
+    
+    'Days to 200 lbs': {
+        'Person R': math.ceil(predicted_day(model, 1, 200))-d['Day'].max(),
+        'Person L': math.ceil(predicted_day(model, 0, 200))-d['Day'].max()
+    }
+}
+
+summary = pd.DataFrame(summary)
+summary.style.format("{:.2f}")
+```
+
+# Appendix {#sec-appendix}
+
+## Statistical Methods {.appendix}
+
+Ordinary least-squares regression was used to fit the model [@fox2015applied].
+
+```{python model_summary}
+#| echo: false
+
+model.fit().summary()
+```
+
+<br/>
+
+@eq-weight-model can be used to predict weight given the person and number of days since the diet started.
+
+$$
+\begin{equation}
+\begin{split}
+E[\text{Weight}|\text{Person}, \text{Day}] = `r round(py$intercept, 2)` + `r round(py$person, 2)`*\text{Person} + `r round(py$day, 2)`*\text{Day} + `r round(py$day_person, 2)`*\text{Person}*\text{Day} \\ \text{ where Person = 1 if Person R and 0 otherwise}
+\end{split}
+\end{equation}
+$$ {#eq-weight-model}
+
+@eq-day-model can be used to predict the day a given weight will be achieved by either person.
+
+$$
+\begin{equation}
+\begin{split}
+E[\text{Day}|\text{Weight}, \text{Person}] = \frac{\text{Weight} - `r round(py$intercept, 2)` - `r round(py$person, 2)`*\text{Person}}{`r round(py$day, 2)` + `r round(py$day_person, 2)`*\text{Person}} \\ \text{ where Person = 1 if Person R and 0 otherwise}
+\end{split}
+\end{equation}
+$$ {#eq-day-model}
+
+@eq-day-rate is can be used to determined the expected average weight loss per day.
+
+$$
+\begin{equation}
+\begin{split}
+\frac{d(E[\text{Weight}|\text{Person}, \text{Day}])}{d(Day)} = `r round(py$day, 2)` + `r round(py$day_person, 2)`*\text{Person} \\ \text{ where Person = 1 if Person R and 0 otherwise}
+\end{split}
+\end{equation}
+$$ {#eq-day-rate}
