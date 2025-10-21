@@ -210,7 +210,7 @@ E[\text{Day}|\text{Weight}, \text{Person}] = \frac{\text{Weight} - `r round(py$i
 \end{equation}
 $$ {#eq-day-model}
 
-@eq-day-rate is can be used to determined the expected average weight loss per day.
+@eq-day-rate can be used to determined the expected average weight loss per day.
 
 $$
 \begin{equation}
