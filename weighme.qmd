@@ -38,7 +38,7 @@ use_virtualenv("./.venv")
 # Introduction
 
 My wife and I are pursuing a mutual reduction in gravitational pull, and as a certified try-hard sweat lord, I naturally wrote a Python program to monitor our descent into svelteness.
-Daily fluctuations are misleading (empirical evidence: a single urination event produced a -2 lb delta), so I employed statistical learning to reveal the true signal beneath the noise. Future weight loss now arrives with 95% confidence and 0% chill (@sec-appendix).
+Daily fluctuations are misleading (empirical evidence: a single urination event produced a -2 lb delta), so I employed statistical learning to reveal the true signal beneath the noise. Future weight loss now arrives with 95% confidence and 0% chill.
 
 ```{python imports}
 #| echo: false
@@ -176,9 +176,7 @@ summary = pd.DataFrame(summary)
 summary.style.format("{:.2f}")
 ```
 
-# Appendix {#sec-appendix}
-
-## Statistical Methods {.appendix}
+# Statistical Methods {#sec-stat-methods}
 
 Ordinary least-squares regression was used to fit the model [@fox2015applied].
 
