@@ -10,19 +10,19 @@ format:
         embed-resources: true
         code-overflow: wrap
         page-layout: full
-        code-fold: false
         toc: true
         toc-location: left
         toc-depth: 4
         toc-expand: 4
         html-math-method: mathjax
+        code-fold: true
         code-tools:
+            toggle: false
             source: true
-            toggle: true
             caption: "Source Code"
 number-sections: false
 appendix-style: plain
-engine: jupyter
+engine: knitr
 knitr:
     opts_knit:
         root.dir: "./"
@@ -40,9 +40,7 @@ use_virtualenv("./.venv")
 My wife and I are pursuing a mutual reduction in gravitational pull, and as a certified try-hard sweat lord, I naturally wrote a Python program to monitor our descent into svelteness.
 Daily fluctuations are misleading (empirical evidence: a single urination event produced a -2 lb delta), so I employed statistical learning to reveal the true signal beneath the noise. Future weight loss now arrives with 95% confidence and 0% chill.
 
-```{python imports}
-#| echo: false
-
+```{python introduction}
 ###########
 # Imports #
 ###########
@@ -53,10 +51,7 @@ from numbers_parser import Document
 import matplotlib.pyplot as plt
 import statsmodels.formula.api as smf
 import math
-```
-
-```{python data_setup}
-#| echo: false
+import session_info
 
 ##############
 # Data setup #
@@ -78,8 +73,23 @@ d = setup_data()
 
 # Results
 
-```{python model_fit}
-#| echo: false
+```{python results}
+##############
+# Data setup #
+##############
+def setup_data():
+    doc = Document("Waimee’s Weight.numbers")
+    sheets = doc.sheets
+    tables = sheets[0].tables
+    data = tables[0].rows(values_only=True)
+    data = pd.DataFrame(data[1:], columns=data[0])
+    data = pd.melt(data, id_vars='Day', var_name='Person', value_name='Weight')
+    data['Day'] = data['Day'].astype('int')
+    data['Person'] = data['Person'].astype('category')
+    data['Weight'] = data['Weight'].astype('float')
+    return data
+
+d = setup_data()
 
 ##################################
 # Linear Model to Predict Weight #
@@ -91,12 +101,6 @@ intercept = model.fit().params.iloc[0]
 person = model.fit().params.iloc[1]
 day = model.fit().params.iloc[2]
 day_person = model.fit().params.iloc[3]
-```
-
-```{python weight_loss_plot}
-#| echo: false
-#| label: weight-fig
-#| fig-cap: "Lineplot of daily weight with predicted values."
 
 ####################
 # Weight Loss Plot #
@@ -120,7 +124,6 @@ def weight_plot(data, pdata):
     
     sns.lineplot(x = 'Day', y = 'Weight', hue = 'Person', data = data)
     
-    plt.title('Line Plot with Groups')
     plt.xlabel('Day')
     plt.ylabel('Weight')
     
@@ -128,12 +131,6 @@ def weight_plot(data, pdata):
     plt.grid(True)
     
     plt.savefig('weight_fig.png')
-
-weight_plot(d, predicted_data)
-```
-
-```{python summary_table}
-#| echo: false
 
 #########################
 # Expectation Functions #
@@ -171,6 +168,18 @@ summary = {
         'Person L': math.ceil(predicted_day(model, 0, 200))-d['Day'].max()
     }
 }
+```
+
+```{python weight_plot}
+#| echo: false
+#| label: weight-fig
+#| fig-cap: "Lineplot of daily weight with predicted values."
+
+weight_plot(d, predicted_data)
+```
+
+```{python summary_stats}
+#| echo: false
 
 summary = pd.DataFrame(summary)
 summary.style.format("{:.2f}")
@@ -183,6 +192,9 @@ Ordinary least-squares regression was used to fit the model [@fox2015applied].
 ```{python model_summary}
 #| echo: false
 
+############################
+# Regression Model Summary #
+############################
 model.fit().summary()
 ```
 
@@ -217,3 +229,13 @@ $$
 \end{split}
 \end{equation}
 $$ {#eq-day-rate}
+
+# Python Session Information
+
+All of the files needed to reproduce these results can be downloaded from the Git repository <https://github.com/wkingc/weighme-py>.
+
+```{python session_info}
+#| echo: false
+
+session_info.show()
+```
