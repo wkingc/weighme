@@ -1,3 +1,4 @@
 commands.sh
 .venv
 .DS_Store
+.Rhistory
