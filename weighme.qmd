@@ -74,23 +74,6 @@ d = setup_data()
 # Results
 
 ```{python results}
-##############
-# Data setup #
-##############
-def setup_data():
-    doc = Document("Waimee’s Weight.numbers")
-    sheets = doc.sheets
-    tables = sheets[0].tables
-    data = tables[0].rows(values_only=True)
-    data = pd.DataFrame(data[1:], columns=data[0])
-    data = pd.melt(data, id_vars='Day', var_name='Person', value_name='Weight')
-    data['Day'] = data['Day'].astype('int')
-    data['Person'] = data['Person'].astype('category')
-    data['Weight'] = data['Weight'].astype('float')
-    return data
-
-d = setup_data()
-
 ##################################
 # Linear Model to Predict Weight #
 ##################################
@@ -156,6 +139,11 @@ summary = {
     'Expected Weight<br>Loss Per Day (lbs/day)': {
         'Person R': round(delta_weight_day(model, 1), 2),
         'Person L': round(delta_weight_day(model, 0), 2)
+    },
+    
+    'Expected Weight<br>Loss Per Week (lbs/week)': {
+        'Person R': round(delta_weight_day(model, 1)*7, 2),
+        'Person L': round(delta_weight_day(model, 0)*7, 2)
     },
     
     'Weight at Time of Cruise (lbs)': {
