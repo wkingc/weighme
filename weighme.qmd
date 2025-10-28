@@ -1,8 +1,7 @@
 ---
 title: "How I Overfit My Waistline in Python"
 author: "Wade K. Copeland"
-date: last-modified
-date-format: "MMMM DD, YYYY"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output-file: index.html
 bibliography: references.bib
 format:
